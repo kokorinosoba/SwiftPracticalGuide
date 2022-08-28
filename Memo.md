@@ -322,3 +322,101 @@
         - `"abc".compare("ABC", options: String.CompareOptions.caseInsensitive)`: ComparisonResult.orderedSame
       - 文字列の探索
         - `"abc".range(of: "bc")`: 1から2の範囲を示す値
+
+## 3.5 `Optional<Wrapped>`型
+- `Optional<Wrapped>`型
+  - 値があるかカラカのいずれかを表す型
+  - nilを許容する必要がある場合に使用する
+  - `Wrapped`はプレースホルダー型と言い、実際にはWrappedを具体的な型で置き換えて使用する
+  - 例: `Optional<Int>`, `Optional<String>`
+  - `Optional<Wrapped>`型のように`<>`(山括弧)内にプレースホルダー型を持つ型をジェネリック型と言う
+  - `Optional<Wrapped>`型には`Wrapped?`と表記する糖衣構文(シンタックスシュガー)が用意されている
+- `Optional<Wrapped>`型の2つのケース: 値の不在を表す.noneと値の存在を表す.some
+  - `Optional<Wrapped>`型はWrapped型の値の存在と不在の2通りを表すことができ、この2つは列挙型として定義されている
+    - `enum Optional<Wrapped> {`
+    - `    case none`
+    - `    case some(Wrapped)`
+    - `}`
+  - 列挙型とは複数の識別子をまとめる型で、それぞれの識別子をケースと言う
+  - `Optional<Wrapped>`型は.noneと.someの2つのケースを定義している
+    - .none: 値の不在(=nil): `Optional<Wrapped>.none` = `nil`
+    - .some: Wrapped型の値の存在: `Optional<Wrapped>.some` = `Optional(値)`
+    - 例
+      - `print(".none: \(String(describing: Optional<Int>.none))")`: nil
+      - `print(".some: \(String(describing: Optional<Int>.some(1)))")`: Optional(1)
+- 型推論
+  - `Optional<Wrapped>`型の.someの値を生成する場合、Wrapped型は.someに持たせる値から型推論できる
+    - 例: `let some = Optional.some(1)`: `Optional<Int>型`
+  - .noneを生成する場合は型推論の元となる値が存在しないため、そのままでは`<Wrapped>`を省略できない
+    - 型アノテーションなどを用いて代入先の型を決定する必要がある
+    - 例: `let none: Int? = Optional.none`: `Optional<Int>型`
+- `Optional<Wrapped>`型の値の生成
+  - 列挙型のケースとして生成する以外にも方法がある
+    - `var a: Int?`
+    - `a = nil`: nilリテラルによる.noneの生成
+    - `a = Optional(1)`: イニシャライザーによる.someの生成
+    - `a = 1`: 値の代入による.someの生成
+    - 列挙型のケースとして生成する方法よりもシンプルに記述できるため、一般的にはこれらの生成方法が使われる
+- `Optional<Wrapped>`型のアンラップ: 値の取り出し
+  - `Optional<Wrapped>`型は値を持っていない可能性があるため、Wrapped型の変数や定数と同じ用に扱うことはできない
+    - `Int?`型どうしの四則演算はコンパイルエラーとなる
+      - 例: `Optional(1) + Optional(1)`
+    - アンラップ
+      - Wrapped型の値を取り出す操作
+      - Wrapped型の値に対する操作を行うには`Optional<Wrapped>`型の値から`Wrapped`型の値を取り出す必要がある
+      - 3つのアンラップの方法がある
+        - オプショナルバインディング: if文による値の取り出し
+          - 条件分岐文や繰り返し文の条件に`Optional<Wrapped>`型の値を指定する
+          - 値の存在が保証されている分岐内ではWrapped型の値に直接アクセスすることができる
+          - オプショナルバインディングはif-let文を用いて行う
+            - `if let 定数名 = Optional<Wrapped>型の値 {`
+            - `    値が存在する場合に実行される文`
+            - `}`
+        - `??`演算子: 値が存在しない場合のデフォルト値を指定する演算子
+          - `Optional<Wrapped>`型に値が存在しない場合のデフォルト値を指定するには中置演算子`??`を使用する
+            - 例: `Optional<Wrapped> ?? Wrapped`
+            - 左辺の`Optional<Wrapped>`型が値を持っていればアンラップしたWrapped型の値を返す
+            - 左辺の`Optional<Wrapped>`型が値を持っていなければ右辺のWrapped型の値を返す
+        - 強制アンラップ: !演算子による`Optional<Wrapped>`型の値の取り出し
+            - `!`演算子を使用して値を強制的に取り出すが、値が存在しない場合実行時エラーになる
+            - 例: `Optional(1)! + Optional(1)!`
+            - 強制アンラップは値がないケースを無視したシンプルなコードを可能にするが、実行時エラーの危険性もはらんでいる
+            - 値の存在がよほど明らかな箇所や値が存在しなければプログラムを終了させたい箇所以外では強制アンラップの使用は避ける
+- オプショナルチェイン: アンラップを伴わずに値のプロパティやメソッドにアクセス
+  - `Optional<Wrapped>?.プロパティ名など`
+    - 例: `Optional(1.0)?.isInfinite`
+    - `Optional<Wrapped>`型の変数や定数がnilだった場合は?以降に記述されたプロパティやメソッドへのアクセスは行わずにnilが返却される
+  - `map(_:)`メソッドと`flatMap(_:)`メソッド: アンラップを伴わずに値の変換を行うメソッド
+    - `map(_:)`
+      - メソッドの引数には値を変換するクロージャーを渡す
+      - 型の値が存在すればクロージャーを実行して値を変換する
+      - 型の値が存在しなければ何も行わない
+      - 例: `Optional(17).map({ value in value * 2 })`: 34(`Optional<Int>`)
+    - `flatMap(_:)`
+      - メソッドの引数には値を変換するクロージャーを渡すが、クロージャーの戻り値は`Optional<Wrapped>`型となる
+        - 例: `Optional("17").flatMap({ value in Int(value) })`: 17(`Optional<Int>`)
+        - ここでのポイントは値の有無が不確かな定数に対し、更に値を返すか定かではない操作を行っていること
+      - flatMapの代わりにmapメソッドを使用してしまうと最終的な結果は二重に`Optional<Wrap>`型に包まれた`Int??`型になってしまう
+        - 例: `Optional("17").map({ value in Int(value) })`: 17(`Optional<Optional<Int>>`)
+      - 二重に不確かな状態を一つにまとめてくれるのが`flatMap(_:)`メソッド
+- 暗黙的にアンラップされた`Optional<Wrapped>`型
+  - `Wrapped?`と表記する糖衣構文とは別に`Wrapped!`と表記する糖衣構文が用意されている
+  - 値へのアクセス時に自動的に強制アンラップを行う型
+  - `Wrapped?`も`Wrapped!`も同じ`Optional<Wrapped>`型のため、互いの値を代入することが可能
+  - 強制アンラップ時にnilだった場合は実行時エラーが発生する
+  - `Optional<Wrapped>`型の強制アンラップと同様に危険な側面を持っているため乱用すべきではない
+- 値の取り出し方法の使い分け
+  - 通常はオプショナルバインディング、`??`演算子、mapやflatMapメソッドを組み合わせて値を取り出すのが良い
+    - 値が存在しないケースを考慮したコードを必ずどこかで書かなければWrapped型の値を取得できないため
+  - 強制アンラップや暗黙的にアンラップされた`Optional<Wrapped>`型は値の存在が明らかな箇所や値が存在しなければプログラムを終了させたい箇所のみで使用するべき
+    - `!`を目印に見つけることが可能
+
+## 3.6 Any型
+- Any型とは
+  - 全ての方が暗黙的に準拠している特別なプロトコルとして実装されている
+  - Any型の変数や定数にはどのような型の値も代入できるため、代入する値の型が決まっていない場合に使用する
+    - 例: `let string: Any = "abc"`
+  - Any型はリテラルやイニシャライザーでは生成できない
+- Any型への代入による型の損失
+  - Any型の変数や定数に代入すると元の型の情報は失われてしまい、元の型では可能だった操作ができなくなってしまう
+  - 可能な限りAny型への代入は避け、型の情報を保つことが望ましい
