@@ -504,3 +504,15 @@
   - Comparableプロトコルに準拠している型
     - Int型, Float型, Double型, String型など
     - Bool型, Any型, `Optional<Wrapped>`型は準拠していないため比較ができない
+
+# コレクションを表す型
+## 4.1 値の集まりの表現
+- コレクションとは
+  - 値の集まりのこと
+- コレクションを表す型
+  - `Array<Element>`型: 配列を表す
+  - `Dictionary<Key, Value>`型: 辞書を表す
+  - `Range<Bound>`型: 範囲を表す
+  - String型: 文字列を表す
+  - これらの型には要素数を取得したりコレクションの一部にアクセスするなどの、コレクションとして共通の機能がある
+    - コレクション共通の機能はSequenceプロトコルやCollectionプロトコルで定義されている
